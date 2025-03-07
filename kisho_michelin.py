@@ -49,35 +49,48 @@ def parse_review_page(url):
     # -------------------------------------------------
     # 1) 書名の取得
     # -------------------------------------------------
-    # 書名の取得
+    # タイトルパターン1: colspan="2"を持つtdの中のstrong
     title_tag = soup.find(lambda tag: tag.name == "td" and tag.get("colspan") == "2" and tag.find("strong"))
     if title_tag:
-        # Concatenate any preceding text with the strong tag text
-        title_text = title_tag.get_text(separator=" ", strip=True)
+        # 書籍タイトルの前にシリーズ名などがある場合（「週将ブックス」など）
+        title_parts = []
+        for string in title_tag.stripped_strings:
+            title_parts.append(string)
+        title_text = " ".join(title_parts)
         title_text = re.sub(r"^\s*■\s*", "", title_text)
         title_text = re.sub(r"\s+", " ", title_text).strip()
         data["書名"] = title_text
     else:
-        # Additional check for book title in a different structure
+        # タイトルパターン2: 単純なstrong
         title_tag = soup.find("strong")
         if title_tag:
-            title_text = title_tag.get_text() or ""
+            title_text = title_tag.get_text(strip=True) or ""
             title_text = re.sub(r"^\s*■\s*", "", title_text)
             title_text = re.sub(r"\s+", " ", title_text).strip()
             data["書名"] = title_text
+        # タイトルパターン3: 特定のテーブル構造の中のstrong
+        else:
+            title_td = soup.find(lambda tag: tag.name == "td" and tag.get("bgcolor") == "#FFFFE6")
+            if title_td and title_td.find("strong"):
+                title_parts = []
+                for string in title_td.stripped_strings:
+                    title_parts.append(string)
+                title_text = " ".join(title_parts)
+                title_text = re.sub(r"^\s*■\s*", "", title_text)
+                title_text = re.sub(r"\s+", " ", title_text).strip()
+                data["書名"] = title_text
 
     # -------------------------------------------------
     # 2) 著者の取得
     # -------------------------------------------------
-    # 著者の取得
-    author_patterns = ["著者", "編", "編　者", "監　修", "著"]
+    author_patterns = ["著者", "編", "編　者", "著　者", "監　修", "著"]
     author_found = False
 
     for pattern in author_patterns:
         if author_found:
             break
         # (A)パターン: <td>著者</td><td>○○</td>
-        author_row = soup.find("td", string=pattern)
+        author_row = soup.find("td", string=lambda s: s and pattern in s)
         if author_row and author_row.find_next_sibling("td"):
             data["著者"] = author_row.find_next_sibling("td").get_text(strip=True)
             author_found = True
@@ -119,34 +132,79 @@ def parse_review_page(url):
     # -------------------------------------------------
     # 4) 総合評価/難易度の取得
     # -------------------------------------------------
-    # 総合評価の取得
-    # Further improved 総合評価の取得
+    # 総合評価の取得 - 複数のパターンに対応
+    # パターン1: [総合評価]をテキストに含むtd
     rating_td = soup.find(lambda tag: tag.name == "td" and "[総合評価]" in tag.get_text())
     if rating_td:
         strong_tag = rating_td.find("strong")
-        data["総合評価"] = strong_tag.get_text(strip=True) if strong_tag else rating_td.get_text(strip=True).split("］")[-1].strip()
-    else:
+        if strong_tag:
+            data["総合評価"] = strong_tag.get_text(strip=True)
+        else:
+            # [総合評価]の後の値を取得
+            rating_text = rating_td.get_text(strip=True)
+            match = re.search(r'\[総合評価\][^\w]*(\w+)', rating_text)
+            if match:
+                data["総合評価"] = match.group(1)
+    
+    # パターン2: 総合評価という文字列を含むtd
+    if not data["総合評価"]:
         alt_rating_td = soup.find(lambda tag: tag.name == "td" and "総合評価" in tag.get_text())
         if alt_rating_td:
             next_td = alt_rating_td.find_next_sibling("td")
-            data["総合評価"] = next_td.get_text(strip=True) if next_td else alt_rating_td.get_text(strip=True).split("：")[-1].strip()
+            if next_td:
+                data["総合評価"] = next_td.get_text(strip=True)
+            else:
+                # 同じセル内に値がある場合
+                rating_text = alt_rating_td.get_text(strip=True)
+                match = re.search(r'総合評価[：:]*\s*(\w+)', rating_text)
+                if match:
+                    data["総合評価"] = match.group(1)
+    
+    # パターン3: 特定の構造のテーブル内
+    if not data["総合評価"]:
+        rating_row = soup.find("tr", lambda tag: tag.find("td", bgcolor="#DFFFDF") and "総合評価" in tag.text)
+        if rating_row:
+            strong_tag = rating_row.find("strong")
+            if strong_tag:
+                data["総合評価"] = strong_tag.get_text(strip=True)
 
-    # Further improved 難易度の取得
+    # 難易度の取得 - 複数のパターンに対応
+    # パターン1: tdタグ内に"難易度"を含む
     difficulty_td = soup.find(lambda t: t.name == "td" and "難易度" in t.get_text())
     if difficulty_td:
         next_td = difficulty_td.find_next_sibling("td")
-        data["難易度"] = next_td.get_text(strip=True) if next_td else difficulty_td.get_text(strip=True).split("：")[-1].strip()
+        if next_td:
+            data["難易度"] = next_td.get_text(strip=True)
+        else:
+            # 同じセル内に値がある場合
+            difficulty_text = difficulty_td.get_text(strip=True)
+            match = re.search(r'難易度[：:]*\s*([★☆\w]+)', difficulty_text)
+            if match:
+                data["難易度"] = match.group(1)
     else:
-        alt_difficulty_td = soup.find(lambda tag: tag.name == "td" and "難易度" in tag.get_text())
-        if alt_difficulty_td:
-            next_td = alt_difficulty_td.find_next_sibling("td")
-            data["難易度"] = next_td.get_text(strip=True) if next_td else alt_difficulty_td.get_text(strip=True).split("：")[-1].strip()
+        # Additional pattern for difficulty extraction
+        difficulty_row = soup.find("tr", lambda tag: tag.find("td") and "難易度" in tag.text)
+        if difficulty_row:
+            difficulty_text = difficulty_row.get_text(strip=True)
+            match = re.search(r'難易度[：:]*\s*([★☆\w]+)', difficulty_text)
+            if match:
+                data["難易度"] = match.group(1)
 
     # -------------------------------------------------
     # 5) 戦法の抽出
     # -------------------------------------------------
-    content = soup.get_text()
-    strategies = re.findall(r"居飛車|振り飛車|四間飛車|三間飛車|中飛車|角換わり|横歩取り", content)
+    strategies = []
+    strategy_patterns = ["居飛車", "振り飛車", "四間飛車", "三間飛車", "中飛車", "角換わり", "横歩取り"]
+    
+    for pattern in strategy_patterns:
+        if soup.find(lambda tag: tag.name == "td" and tag.string and pattern in tag.string):
+            strategies.append(pattern)
+    
+    # 戦法がtd内に含まれていない場合、全テキストから検索
+    if not strategies:
+        content = soup.get_text()
+        strategies = re.findall(r"居飛車|振り飛車|四間飛車|三間飛車|中飛車|角換わり|横歩取り", content)
+    
     data["戦法"] = list(set(strategies))
 
     print(f"Parsed data from {url}: {data}")
