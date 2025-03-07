@@ -162,7 +162,8 @@ def parse_review_page(url):
     
     # パターン3: 特定の構造のテーブル内
     if not data["総合評価"]:
-        rating_row = soup.find("tr", lambda tag: tag.find("td", bgcolor="#DFFFDF") and "総合評価" in tag.text)
+        # ここが問題の箇所: Lambda 関数内でのNoneチェックが必要
+        rating_row = soup.find("tr", lambda tag: tag is not None and tag.find("td", bgcolor="#DFFFDF") is not None and "総合評価" in tag.text)
         if rating_row:
             strong_tag = rating_row.find("strong")
             if strong_tag:
@@ -183,7 +184,8 @@ def parse_review_page(url):
                 data["難易度"] = match.group(1)
     else:
         # Additional pattern for difficulty extraction
-        difficulty_row = soup.find("tr", lambda tag: tag.find("td") and "難易度" in tag.text)
+        # ここも同様に修正
+        difficulty_row = soup.find("tr", lambda tag: tag is not None and tag.find("td") is not None and "難易度" in tag.text)
         if difficulty_row:
             difficulty_text = difficulty_row.get_text(strip=True)
             match = re.search(r'難易度[：:]*\s*([★☆\w]+)', difficulty_text)
