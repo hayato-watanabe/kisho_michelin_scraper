@@ -42,7 +42,7 @@ def parse_review_page(url):
         "総合評価": "",
         "戦法": [],
         "発行年月": "",
-        "難易度": "",
+        # "難易度": "",
         "URL": url,  # 後で Excel 用ハイパーリンクに組み込み
     }
 
@@ -134,7 +134,7 @@ def parse_review_page(url):
     # -------------------------------------------------
     # 総合評価の取得 - 複数のパターンに対応
     # パターン1: [総合評価]をテキストに含むtd
-    rating_td = soup.find(lambda tag: tag.name == "td" and "[総合評価]" in tag.get_text())
+    rating_td = soup.find(lambda tag: tag.name == "td" and "総合評価" in tag.get_text())
     if rating_td:
         strong_tag = rating_td.find("strong")
         if strong_tag:
@@ -142,10 +142,10 @@ def parse_review_page(url):
         else:
             # [総合評価]の後の値を取得
             rating_text = rating_td.get_text(strip=True)
-            match = re.search(r'\[総合評価\][^\w]*(\w+)', rating_text)
+            match = re.search(r'\[?総合評価[^\w]*([A-Z]+)', rating_text)
             if match:
                 data["総合評価"] = match.group(1)
-    
+
     # パターン2: 総合評価という文字列を含むtd
     if not data["総合評価"]:
         alt_rating_td = soup.find(lambda tag: tag.name == "td" and "総合評価" in tag.get_text())
@@ -156,57 +156,34 @@ def parse_review_page(url):
             else:
                 # 同じセル内に値がある場合
                 rating_text = alt_rating_td.get_text(strip=True)
-                match = re.search(r'総合評価[：:]*\s*(\w+)', rating_text)
+                match = re.search(r'総合評価[：:]*\s*([A-Z]+)', rating_text)
                 if match:
                     data["総合評価"] = match.group(1)
-    
+
     # パターン3: 特定の構造のテーブル内
     if not data["総合評価"]:
-        # ここが問題の箇所: Lambda 関数内でのNoneチェックが必要
+        # Lambda関数内でのNoneチェックが必要
         rating_row = soup.find("tr", lambda tag: tag is not None and tag.find("td", bgcolor="#DFFFDF") is not None and "総合評価" in tag.text)
         if rating_row:
             strong_tag = rating_row.find("strong")
             if strong_tag:
                 data["総合評価"] = strong_tag.get_text(strip=True)
 
-    # 難易度の取得 - 複数のパターンに対応
-    # パターン1: tdタグ内に"難易度"を含む
-    difficulty_td = soup.find(lambda t: t.name == "td" and "難易度" in t.get_text())
-    if difficulty_td:
-        next_td = difficulty_td.find_next_sibling("td")
-        if next_td:
-            data["難易度"] = next_td.get_text(strip=True)
-        else:
-            # 同じセル内に値がある場合
-            difficulty_text = difficulty_td.get_text(strip=True)
-            match = re.search(r'難易度[：:]*\s*([★☆\w]+)', difficulty_text)
-            if match:
-                data["難易度"] = match.group(1)
-    else:
-        # Additional pattern for difficulty extraction
-        # ここも同様に修正
-        difficulty_row = soup.find("tr", lambda tag: tag is not None and tag.find("td") is not None and "難易度" in tag.text)
-        if difficulty_row:
-            difficulty_text = difficulty_row.get_text(strip=True)
-            match = re.search(r'難易度[：:]*\s*([★☆\w]+)', difficulty_text)
-            if match:
-                data["難易度"] = match.group(1)
-
     # -------------------------------------------------
     # 5) 戦法の抽出
     # -------------------------------------------------
     strategies = []
     strategy_patterns = ["居飛車", "振り飛車", "四間飛車", "三間飛車", "中飛車", "角換わり", "横歩取り"]
-    
+
     for pattern in strategy_patterns:
         if soup.find(lambda tag: tag.name == "td" and tag.string and pattern in tag.string):
             strategies.append(pattern)
-    
+
     # 戦法がtd内に含まれていない場合、全テキストから検索
     if not strategies:
         content = soup.get_text()
         strategies = re.findall(r"居飛車|振り飛車|四間飛車|三間飛車|中飛車|角換わり|横歩取り", content)
-    
+
     data["戦法"] = list(set(strategies))
 
     print(f"Parsed data from {url}: {data}")
@@ -228,7 +205,7 @@ def main():
 
     with open("kisho_reviews.tsv", "w", newline="", encoding="utf-8-sig") as f:
         # CSVモジュールでTSVとして書き出すため delimiter="\t" を指定
-        fieldnames = ["書名", "総合評価", "戦法", "著者", "発行年月", "難易度"]
+        fieldnames = ["書名", "総合評価", "戦法", "著者", "発行年月"]
         writer = csv.DictWriter(
             f,
             fieldnames=fieldnames,
@@ -249,7 +226,6 @@ def main():
                     "戦法": ", ".join(data["戦法"]),
                     "著者": data["著者"],
                     "発行年月": data["発行年月"],
-                    "難易度": data["難易度"],
                 }
 
                 writer.writerow(row_dict)

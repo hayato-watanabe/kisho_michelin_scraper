@@ -38,7 +38,7 @@ class TestKishoMichelin(unittest.TestCase):
                 <td colspan="2"><strong>■ Book Title</strong></td>
                 <td>著者</td><td>Author Name</td>
                 <td>発行年月</td><td>2021年8月</td>
-                <td>[総合評価]<strong>5</strong></td>
+                <td>[総合評価]<strong>A</strong></td>
                 <td>難易度</td><td>Intermediate</td>
                 <td>居飛車</td>
             </body>
@@ -50,10 +50,9 @@ class TestKishoMichelin(unittest.TestCase):
         expected_data = {
             "書名": "Book Title",
             "著者": "Author Name",
-            "総合評価": "5",
+            "総合評価": "A",
             "戦法": ["居飛車"],
             "発行年月": "2021年8月",
-            "難易度": "Intermediate",
             "URL": url
         }
 
@@ -118,7 +117,6 @@ class TestKishoMichelin(unittest.TestCase):
             "総合評価": "D",
             "戦法": ["居飛車"],
             "発行年月": "2003年7月",
-            "難易度": "★★★☆",
             "URL": url
         }
 
@@ -154,9 +152,7 @@ class TestKishoMichelin(unittest.TestCase):
                     解答の裏透け：B<br>
                     解説：C<br>
                     </font><font color="#0000FF" size="2">上級～有段向き</font></td>
-                    <td valign="top" rowspan="5" width="120"
-                    bgcolor="#F7F7F7"><p align="center"><a href="https://www.amazon.co.jp/dp/4839926948/ref=nosim?tag=kishomichelin-22" target="_blank"><img src="../image/amazon/amazon-link.jpg" alt="この本をAmazonで見る" align="top" border="3" width="120" height="49"></a></p>
-                    </td>
+                    <td valign="top" rowspan="5" width="120" bgcolor="#F7F7F7"><p align="center"><a href="https://www.amazon.co.jp/dp/4839926948/ref=nosim?tag=kishomichelin-22" target="_blank"><img src="../image/amazon/amazon-link.jpg" alt="この本をAmazonで見る" align="top" border="3" width="120" height="49"></a></p></td>
                     <td>四間飛車</td>
                 </tr>
                 <tr>
@@ -185,7 +181,6 @@ class TestKishoMichelin(unittest.TestCase):
             "総合評価": "C",
             "戦法": ["四間飛車"],
             "発行年月": "2007年12月",
-            "難易度": "★★★☆",
             "URL": url
         }
 
@@ -256,7 +251,6 @@ class TestKishoMichelin(unittest.TestCase):
             "総合評価": "C",
             "戦法": ["四間飛車"],
             "発行年月": "1991年9月",
-            "難易度": "★★★★",
             "URL": url
         }
 
@@ -352,7 +346,6 @@ class TestKishoMichelin(unittest.TestCase):
             "総合評価": "A",
             "戦法": ["四間飛車"],
             "発行年月": "2024年4月",
-            "難易度": "★★★★☆",
             "URL": url
         }
 
@@ -419,7 +412,6 @@ class TestKishoMichelin(unittest.TestCase):
             "総合評価": "C",
             "戦法": ["中飛車"],
             "発行年月": "1980年8月",
-            "難易度": "★",
             "URL": url
         }
 
