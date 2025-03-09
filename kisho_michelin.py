@@ -209,7 +209,9 @@ def main():
         writer = csv.DictWriter(
             f,
             fieldnames=fieldnames,
-            delimiter="\t"
+            delimiter="\t",
+            quoting=csv.QUOTE_NONE,
+            escapechar='\\'
         )
         writer.writeheader()
 
