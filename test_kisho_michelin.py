@@ -1,17 +1,26 @@
+import os
 import unittest
 from unittest.mock import patch, Mock
-import kisho_michelin
-import os
+
+from kisho_michelin import ReviewScraper
+
 
 class TestKishoMichelin(unittest.TestCase):
+    """棋書ミシュランスクレイパーのテストクラス"""
 
+    def setUp(self):
+        """テスト用のスクレイパーインスタンスを作成"""
+        self.scraper = ReviewScraper()
+        
     def load_test_data(self, filename):
+        """テストデータファイルを読み込む"""
         filepath = os.path.join('test_data', filename)
         with open(filepath, 'r', encoding='utf-8') as f:
             return f.read()
 
-    @patch('kisho_michelin.requests.get')
+    @patch('requests.get')
     def test_extract_links(self, mock_get):
+        """リンク抽出機能のテスト"""
         # Mock the response of requests.get
         mock_response = Mock()
         mock_response.content = self.load_test_data('link_list.html')
@@ -23,11 +32,12 @@ class TestKishoMichelin(unittest.TestCase):
             "https://rocky-and-hopper.sakura.ne.jp/Kisho-Michelin/3/3-3.htm"
         ]
 
-        links = kisho_michelin.extract_links()
+        links = self.scraper.extract_links()
         self.assertEqual(links, expected_links)
 
-    @patch('kisho_michelin.requests.get')
+    @patch('requests.get')
     def test_parse_review_pages(self, mock_get):
+        """ページ解析機能のテスト"""
         test_cases = [
             {
                 'filename': 'review_page_1.html',
@@ -118,13 +128,14 @@ class TestKishoMichelin(unittest.TestCase):
                 url = "https://example.com/review"
                 expected_data = case['expected_data']
 
-                data = kisho_michelin.parse_review_page(url)
+                data = self.scraper.parse_review_page(url)
                 self.assertEqual(data["書名"], expected_data["書名"])
                 self.assertEqual(data["著者"], expected_data["著者"])
                 self.assertEqual(data["総合評価"], expected_data["総合評価"])
                 self.assertCountEqual(data["戦法"], expected_data["戦法"])
                 self.assertEqual(data["発行年月"], expected_data["発行年月"])
                 self.assertEqual(data["URL"], expected_data["URL"])
+
 
 if __name__ == "__main__":
     unittest.main()
