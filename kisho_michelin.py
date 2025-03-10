@@ -83,29 +83,38 @@ def parse_review_page(url):
     # -------------------------------------------------
     # 2) 著者の取得
     # -------------------------------------------------
-    author_patterns = ["著者", "編", "編　者", "著　者", "監　修", "著"]
-    author_found = False
+    author_td = soup.find("td", string=re.compile(r"【著\s*者】"))
+    if author_td:
+        # "【著　者】　羽生善治" から著者名を抽出
+        author_text = author_td.get_text(strip=True)
+        match = re.search(r"【著\s*者】\s*(.+)", author_text)
+        if match:
+            data["著者"] = match.group(1).strip()
+    else:
+        # 修正前のコードを保持し、他のケースにも対応
+        author_patterns = ["著者", "編", "編　者", "著　者", "監　修", "著"]
+        author_found = False
 
-    for pattern in author_patterns:
-        if author_found:
-            break
-        # (A)パターン: <td>著者</td><td>○○</td>
-        author_row = soup.find("td", string=lambda s: s and pattern in s)
-        if author_row and author_row.find_next_sibling("td"):
-            data["著者"] = author_row.find_next_sibling("td").get_text(strip=True)
-            author_found = True
-        else:
-            # (B)パターン: "【著　者】" を厳密に探す
-            alt_author_td = soup.find(
-                lambda t: t.name == "td" and f"【{pattern}】" in t.get_text()
-            )
-            if alt_author_td:
-                text_val = alt_author_td.get_text(strip=True)
-                match = re.search(rf"【{pattern}】[：:、\s]*(.*)", text_val)
-                if match:
-                    author = re.sub(r"\s+", " ", match.group(1)).strip()
-                    data["著者"] = author
-                    author_found = True
+        for pattern in author_patterns:
+            if author_found:
+                break
+            # (A)パターン: <td>著者</td><td>○○</td>
+            author_row = soup.find("td", string=lambda s: s and pattern in s)
+            if author_row and author_row.find_next_sibling("td"):
+                data["著者"] = author_row.find_next_sibling("td").get_text(strip=True)
+                author_found = True
+            else:
+                # (B)パターン: "【著　者】" を厳密に探す
+                alt_author_td = soup.find(
+                    lambda t: t.name == "td" and f"【{pattern}】" in t.get_text()
+                )
+                if alt_author_td:
+                    text_val = alt_author_td.get_text(strip=True)
+                    match = re.search(rf"【{pattern}】[：:、\s]*(.*)", text_val)
+                    if match:
+                        author = re.sub(r"\s+", " ", match.group(1)).strip()
+                        data["著者"] = author
+                        author_found = True
 
     # -------------------------------------------------
     # 3) 発行年月の取得
@@ -168,7 +177,6 @@ def parse_review_page(url):
             strong_tag = rating_row.find("strong")
             if strong_tag:
                 data["総合評価"] = strong_tag.get_text(strip=True)
-
     # -------------------------------------------------
     # 5) 戦法の抽出
     # -------------------------------------------------
@@ -236,6 +244,7 @@ def main():
                 print(f"Network error processing {link}: {e}")
             except Exception as e:
                 print(f"Error processing {link}: {e}")
+
 
 if __name__ == "__main__":
     main()
