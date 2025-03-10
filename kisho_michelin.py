@@ -142,7 +142,7 @@ def parse_review_page(url):
     # 4) 総合評価/難易度の取得
     # -------------------------------------------------
     # 総合評価の取得 - 複数のパターンに対応
-    # パターン1: [総合評価]をテキストに含むtd
+    # パターン1: "総合評価"をテキストに含むtd
     rating_td = soup.find(lambda tag: tag.name == "td" and "総合評価" in tag.get_text())
     if rating_td:
         strong_tag = rating_td.find("strong")
@@ -155,9 +155,9 @@ def parse_review_page(url):
             if match:
                 data["総合評価"] = match.group(1)
 
-    # パターン2: 総合評価という文字列を含むtd
+    # パターン2: "[総合評価]"という文字列を含むtd
     if not data["総合評価"]:
-        alt_rating_td = soup.find(lambda tag: tag.name == "td" and "総合評価" in tag.get_text())
+        alt_rating_td = soup.find(lambda tag: tag.name == "td" and "[総合評価]" in tag.get_text())
         if alt_rating_td:
             next_td = alt_rating_td.find_next_sibling("td")
             if next_td:
@@ -177,6 +177,7 @@ def parse_review_page(url):
             strong_tag = rating_row.find("strong")
             if strong_tag:
                 data["総合評価"] = strong_tag.get_text(strip=True)
+
     # -------------------------------------------------
     # 5) 戦法の抽出
     # -------------------------------------------------
