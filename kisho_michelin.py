@@ -220,6 +220,7 @@ class ReviewScraper:
         title_text = " ".join(title_parts)
         title_text = re.sub(r"^\s*■\s*", "", title_text)
         title_text = re.sub(r"\s+", " ", title_text).strip()
+        title_text = title_text.replace('"', '')  # ダブルクォーテーションを除去
         return title_text
     
     def _extract_author(self, soup: BeautifulSoup) -> str:
